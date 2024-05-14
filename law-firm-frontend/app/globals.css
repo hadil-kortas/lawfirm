@@ -1,0 +1,21 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+.text-green-500 {
+  color:green
+}
+
+.text-red-500 {
+  color: red;
+}
+
+.text-yellow-500 {
+  color: yellow;
+}
+
+
+
+
+  
