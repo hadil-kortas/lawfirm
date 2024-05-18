@@ -5,6 +5,9 @@ import { SelectValue, SelectTrigger, SelectItem, SelectContent, Select } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Client, Lawyer, Matter, MatterTypeCount } from './types';
+import '@fortawesome/fontawesome-free/css/all.min.css';
+
+
 
 export default function Home() {
   const [matters, setMatters] = useState<Matter[]>([]);
@@ -65,6 +68,7 @@ export default function Home() {
       return response.json();
     })
     .then(() => {
+      // Refresh matters and matter types
       fetch('http://localhost:3000/matters')
         .then(response => response.json())
         .then(data => setMatters(data));
@@ -77,6 +81,23 @@ export default function Home() {
         console.error('There has been a problem with your fetch operation:', error);
         alert(error.message);
     });
+  };
+
+  const handleDelete = (matterID: number) => {
+    fetch(`http://localhost:3000/matters/${matterID}`, {
+      method: 'DELETE',
+    })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Failed to delete matter');
+        }
+        // Remove the deleted matter from the state
+        setMatters(prevMatters => prevMatters.filter(matter => matter.MatterID !== matterID));
+      })
+      .catch(error => {
+        console.error('There has been a problem with your delete operation:', error);
+        alert(error.message);
+      });
   };
 
   return (
@@ -156,10 +177,14 @@ export default function Home() {
           <h2 className="text-xl font-bold">All Matters</h2>
           <div className="mt-4 divide-y rounded-lg border">
             {matters.map(matter => (
-              <div key={matter.MatterID} className="grid grid-cols-[1fr_1fr_1fr] items-center gap-4 px-6 py-4">
+              <div key={matter.MatterID} className="matter-container px-6 py-4">
                 <div className="font-medium">{matter.clientName}</div>
                 <div>{matter.MatterType}</div>
                 <div className={`text-${matter.Status === 'Active' ? 'green' : matter.Status === 'Closed' ? 'red' : 'yellow'}-500`}>{matter.Status}</div>
+                <i
+                  className="fas fa-trash text-red-500 hover:text-red-700 cursor-pointer delete-icon"
+                  onClick={() => handleDelete(matter.MatterID)}
+                ></i>
               </div>
             ))}
           </div>

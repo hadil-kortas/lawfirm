@@ -18,4 +18,15 @@
 
 
 
+.matter-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr auto; /* Added auto for the trash icon */
+  align-items: center;
+  gap: 4px;
+}
+
+.matter-container .delete-icon {
+  justify-self: end; /* Aligns the trash icon to the end of the grid cell */
+}
+
   
