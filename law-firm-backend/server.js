@@ -69,6 +69,12 @@ app.get('/lawyers', (req, res) => {
 app.post('/matters', (req, res) => {
   const matter = req.body;
 
+  // Check for mandatory fields
+  if (!matter.ClientID || !matter.MatterType || !matter.LawyerID || !matter.Status || !matter.DetailedDescription) {
+    return res.status(400).json({ error: 'All fields are mandatory' });
+  }
+
+
   // Check if the client ID exists
   connection.query('SELECT COUNT(*) AS count FROM clients WHERE ClientID = ?', [matter.ClientID], (err, clientResult) => {
     if (err) {
@@ -91,18 +97,32 @@ app.post('/matters', (req, res) => {
         return res.status(400).json({ error: 'Invalid lawyer ID' });
       }
 
-      // Insert the new matter
-      connection.query('INSERT INTO Matters SET ?', matter, (err, result) => {
+       // Check if the client-lawyer combination already exists
+       connection.query('SELECT COUNT(*) AS count FROM matters WHERE ClientID = ? AND LawyerID = ?', [matter.ClientID, matter.LawyerID], (err, existingCombinationResult) => {
         if (err) {
-          console.error('Error inserting matter:', err);
-          return res.status(500).json({ error: 'Error inserting matter' });
+          console.error('Error checking client-lawyer combination:', err);
+          return res.status(500).json({ error: 'Error adding matter' });
         }
-        res.status(201).json({ message: 'Matter added successfully' });
+
+        if (existingCombinationResult[0].count > 0) {
+          return res.status(400).json({ error: 'This client already has a matter with the same lawyer' });
+        }
+
+        // Insert the new matter
+        const sql = 'INSERT INTO Matters (ClientID, MatterType, LawyerID, Status, DetailedDescription) VALUES (?, ?, ?, ?, ?)';
+        const values = [matter.ClientID, matter.MatterType, matter.LawyerID, matter.Status, matter.DetailedDescription];
+
+        connection.query(sql, values, (err, result) => {
+          if (err) {
+            console.error('Error inserting matter:', err);
+            return res.status(500).json({ error: 'Error inserting matter' });
+          }
+          res.status(201).json({ message: 'Matter added successfully' });
+        });
       });
     });
   });
 });
-
 
 
 

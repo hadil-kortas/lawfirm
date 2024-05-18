@@ -1,15 +1,16 @@
 "use client";
-import { useState, useEffect } from 'react';
-import { Label } from "@/components/ui/label"
-import { SelectValue, SelectTrigger, SelectItem, SelectContent, Select } from "@/components/ui/select"
-import { Textarea } from "@/components/ui/textarea"
-import { Button } from "@/components/ui/button"
+import { useState, useEffect, FormEvent } from 'react';
+import { Label } from "@/components/ui/label";
+import { SelectValue, SelectTrigger, SelectItem, SelectContent, Select } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { Client, Lawyer, Matter, MatterTypeCount } from './types';
 
 export default function Home() {
-  const [matters, setMatters] = useState([]);
-  const [matterTypes, setMatterTypes] = useState([]);
-  const [clients, setClients] = useState([]);
-  const [lawyers, setLawyers] = useState([]);
+  const [matters, setMatters] = useState<Matter[]>([]);
+  const [matterTypes, setMatterTypes] = useState<MatterTypeCount[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [lawyers, setLawyers] = useState<Lawyer[]>([]);
 
   useEffect(() => {
     fetch('http://localhost:3000/matters')
@@ -29,17 +30,24 @@ export default function Home() {
       .then(data => setLawyers(data));
   }, []);
 
-  const handleSubmit = (event) => {
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+  
+    const formData = new FormData(event.currentTarget);
+    const data: any = {};
+  
+    formData.forEach((value, key) => {
+      data[key] = value;
+    });
+    
+    // Check if any mandatory field is empty
 
-    const formData = new FormData(event.target);
-    const data = Object.fromEntries(formData);
-
-  // Check if all fields are filled out
-  if (!data.ClientID || !data.MatterType || !data.LawyerID || !data.Status || !data['matter-description']) {
-    alert('All fields are mandatory');
-    return;
-  }
+    for (const key in data) {
+      if (!data[key as keyof Matter]) {
+        alert('All fields are mandatory');
+        return;
+      }
+    }
 
     fetch('http://localhost:3000/matters', {
       method: 'POST',
@@ -50,12 +58,13 @@ export default function Home() {
     })
     .then(response => {
       if (!response.ok) {
-        throw new Error('Network response was not ok');
+        return response.json().then(errorData => {
+          throw new Error(errorData.error);
+        });
       }
       return response.json();
     })
     .then(() => {
-      // Refresh matters and matter types
       fetch('http://localhost:3000/matters')
         .then(response => response.json())
         .then(data => setMatters(data));
@@ -66,7 +75,7 @@ export default function Home() {
       })
       .catch((error) => {
         console.error('There has been a problem with your fetch operation:', error);
-        alert('Error adding matter');
+        alert(error.message);
     });
   };
 
@@ -80,28 +89,28 @@ export default function Home() {
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="client-name">Client Name</Label>
-            <Select id="client-name" name="ClientID">
+            <Select name="ClientID">
               <SelectTrigger>
                 <SelectValue placeholder="Select client" />
               </SelectTrigger>
               <SelectContent>
                 {clients.map(client => (
-                  <SelectItem key={client.ClientID} value={client.ClientID}>{client.ClientName}</SelectItem>
+                  <SelectItem key={client.ClientID} value={client.ClientID.toString()}>{client.ClientName}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-2">
             <Label htmlFor="matter-type">Matter Type</Label>
-            <Select id="matter-type">
+            <Select name="MatterType">
               <SelectTrigger>
                 <SelectValue placeholder="Select matter type" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="litigation">Litigation</SelectItem>
-                <SelectItem value="corporate">Corporate</SelectItem>
-                <SelectItem value="real-estate">Real Estate</SelectItem>
-                <SelectItem value="intellectual-property">Intellectual Property</SelectItem>
+                <SelectItem value="Litigation">Litigation</SelectItem>
+                <SelectItem value="Corporate">Corporate</SelectItem>
+                <SelectItem value="Real Estate">Real Estate</SelectItem>
+                <SelectItem value="Intellectual Property">Intellectual Property</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -109,33 +118,34 @@ export default function Home() {
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="responsible-attorney">Responsible Attorney</Label>
-            <Select id="responsible-attorney" name="LawyerID">
+            <Select name="LawyerID">
               <SelectTrigger>
                 <SelectValue placeholder="Select attorney" />
               </SelectTrigger>
               <SelectContent>
                 {lawyers.map(lawyer => (
-                  <SelectItem key={lawyer.LawyerID} value={lawyer.LawyerID}>{lawyer.LawyerName}</SelectItem>
+                  <SelectItem key={lawyer.LawyerID} value={lawyer.LawyerID.toString()}>{lawyer.LawyerName}</SelectItem>
                 ))}
               </SelectContent>
-            </Select>          </div>
+            </Select>          
+          </div>
           <div className="space-y-2">
             <Label htmlFor="status">Status</Label>
-            <Select id="status">
+            <Select name="Status">
               <SelectTrigger>
                 <SelectValue placeholder="Select status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="open">Open</SelectItem>
-                <SelectItem value="closed">Closed</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="Active">Active</SelectItem>
+                <SelectItem value="Closed">Closed</SelectItem>
+                <SelectItem value="On Hold">On Hold</SelectItem>
               </SelectContent>
             </Select>
           </div>
         </div>
         <div className="space-y-2">
           <Label htmlFor="matter-description">Matter Description</Label>
-          <Textarea className="min-h-[100px]" id="matter-description" placeholder="Enter matter description" />
+          <Textarea className="min-h-[100px]" id="matter-description" name="DetailedDescription" placeholder="Enter matter description" />
         </div>
         <Button className="w-full" type="submit">
           Add Matter
@@ -167,5 +177,5 @@ export default function Home() {
         </div>
       </div>
     </div>
-  )
+  );
 }
