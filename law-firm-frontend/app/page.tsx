@@ -93,6 +93,20 @@ export default function Home() {
         }
         // Remove the deleted matter from the state
         setMatters(prevMatters => prevMatters.filter(matter => matter.MatterID !== matterID));
+
+        // Find the matter type of the deleted matter
+        const deletedMatterType = matters.find(matter => matter.MatterID === matterID)?.MatterType;
+
+        // Update the count of the corresponding matter type
+        setMatterTypes(prevMatterTypes => {
+          const updatedMatterTypes = prevMatterTypes.map(type => {
+            if (type.MatterType === deletedMatterType) {
+              return { ...type, count: type.count - 1 };
+            }
+            return type;
+          });
+          return updatedMatterTypes;
+        });
       })
       .catch(error => {
         console.error('There has been a problem with your delete operation:', error);
